@@ -1,0 +1,8 @@
+joblib
+librosa
+numpy
+scikit-learn
+sounddevice
+torch
+transformers
+pyannote.audio

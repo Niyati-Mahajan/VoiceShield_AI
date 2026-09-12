@@ -1,0 +1,106 @@
+{
+  "project": "VoiceShield",
+  "label_mapping": {
+    "REAL": 0,
+    "FAKE": 1
+  },
+  "selected_classifier": "logistic_regression",
+  "candidate_validation_metrics": {
+    "logistic_regression": {
+      "accuracy": 0.96,
+      "precision_real": 0.9791666666666666,
+      "recall_real": 0.94,
+      "f1_real": 0.9591836734693877,
+      "precision_fake": 0.9423076923076923,
+      "recall_fake": 0.98,
+      "f1_fake": 0.9607843137254902,
+      "macro_f1": 0.959983993597439,
+      "confusion_matrix": [
+        [
+          94,
+          6
+        ],
+        [
+          2,
+          98
+        ]
+      ],
+      "real_false_positive_rate": 0.06,
+      "fake_false_negative_rate": 0.02
+    },
+    "linear_svm_calibrated": {
+      "accuracy": 0.96,
+      "precision_real": 0.9791666666666666,
+      "recall_real": 0.94,
+      "f1_real": 0.9591836734693877,
+      "precision_fake": 0.9423076923076923,
+      "recall_fake": 0.98,
+      "f1_fake": 0.9607843137254902,
+      "macro_f1": 0.959983993597439,
+      "confusion_matrix": [
+        [
+          94,
+          6
+        ],
+        [
+          2,
+          98
+        ]
+      ],
+      "real_false_positive_rate": 0.06,
+      "fake_false_negative_rate": 0.02
+    },
+    "small_mlp": {
+      "accuracy": 0.955,
+      "precision_real": 0.9595959595959596,
+      "recall_real": 0.95,
+      "f1_real": 0.9547738693467337,
+      "precision_fake": 0.9504950495049505,
+      "recall_fake": 0.96,
+      "f1_fake": 0.9552238805970149,
+      "macro_f1": 0.9549988749718743,
+      "confusion_matrix": [
+        [
+          95,
+          5
+        ],
+        [
+          4,
+          96
+        ]
+      ],
+      "real_false_positive_rate": 0.05,
+      "fake_false_negative_rate": 0.04
+    }
+  },
+  "decision_thresholds": {
+    "real_if_fake_score_at_or_below": 0.45,
+    "fake_if_fake_score_at_or_above": 0.55,
+    "suspicious_between_thresholds": true
+  },
+  "feature_config": {
+    "feature_version": "wavlm-stats-last4-v2",
+    "model_id": "microsoft/wavlm-base",
+    "layers": [
+      -1,
+      -2,
+      -3,
+      -4
+    ],
+    "pooling": "attention-mask-aware mean+std statistics pooling",
+    "audio": {
+      "version": "audio-preprocess-v2",
+      "sample_rate": 16000,
+      "trim_top_db": 35.0,
+      "min_duration_seconds": 0.35,
+      "near_silent_rms": 0.0001,
+      "peak_normalize_to": 0.95
+    }
+  },
+  "training": {
+    "training_source_files": 1000,
+    "validation_source_files": 200,
+    "augment_copies": 1,
+    "custom_data_included": true
+  }
+}
