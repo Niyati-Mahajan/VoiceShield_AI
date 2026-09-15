@@ -28,6 +28,7 @@ def _empty_speaker_result(speaker_id: str, segments: List[Dict[str, object]], re
         "reliable_segment_count": 0,
         "real_score": None,
         "fake_score": None,
+        "binary_prediction": "UNKNOWN",
         "risk_score": None,
         "risk_level": "INSUFFICIENT_AUDIO",
         "status": "INSUFFICIENT_AUDIO",
@@ -104,6 +105,7 @@ def _analyze_speaker_segments(
             "usable_duration": round(processed.duration_seconds, 3),
             "real_score": float(result["real_score"]),
             "fake_score": float(result["fake_score"]),
+            "binary_prediction": result["binary_prediction"],
             "risk_score": float(result["risk_score"]),
             "risk_level": risk_level,
             "model_verdict": result["verdict"],
@@ -139,6 +141,7 @@ def _analyze_speaker_segments(
         "reliable_segment_count": len(reliable_results),
         "real_score": weighted_real,
         "fake_score": weighted_fake,
+        "binary_prediction": "FAKE" if weighted_fake >= weighted_real else "REAL",
         "risk_score": weighted_fake,
         "max_fake_score": max_fake,
         "risk_level": risk_level,
@@ -180,10 +183,14 @@ def _aggregate_call_risk(
     fake_threshold = float(thresholds["fake_if_fake_score_at_or_above"])
 
     if high_risk_speakers:
+        strongest_high_risk = max(
+            high_risk_speakers,
+            key=lambda speaker: float(speaker.get("max_fake_score", speaker["fake_score"])),
+        )
         return {
-            "overall_risk_score": float(strongest["fake_score"]),
+            "overall_risk_score": float(strongest_high_risk.get("max_fake_score", strongest_high_risk["fake_score"])),
             "overall_risk_level": "HIGH RISK",
-            "reason": f"High synthetic-speech probability detected for {strongest['speaker_id']}.",
+            "reason": f"High synthetic-speech probability detected for {strongest_high_risk['speaker_id']}.",
         }
 
     if suspicious_speakers or float(strongest["fake_score"]) >= fake_threshold:
@@ -211,7 +218,8 @@ def analyze_multispeaker_call(
     messages: List[str] = []
 
     try:
-        diarization_segments = diarize_audio(path)
+        diarization_result = diarize_audio(path)
+        diarization_segments = list(diarization_result.get("segments", []))
     except (DiarizationSetupError, FileNotFoundError, RuntimeError, ValueError) as exc:
         if not fallback_to_chunk_detector:
             raise
@@ -308,13 +316,19 @@ def print_analysis(analysis: Dict[str, object]) -> None:
         print("Note:", message)
 
     for speaker in analysis["speakers"]:
-        print(f"\n{speaker['speaker_id']}")
+        speaker_number = int(str(speaker["speaker_id"]).split("_")[-1]) + 1
+        print(f"\nSpeaker {speaker_number} ({speaker['speaker_id']}): {speaker['binary_prediction']}")
         print("Duration:", f"{speaker['speech_duration']:.2f} sec")
         print("Segments:", speaker["segment_count"])
         print("Reliable segments:", speaker["reliable_segment_count"])
         print("REAL:", percent(speaker["real_score"]))
         print("FAKE:", percent(speaker["fake_score"]))
+        print("Max segment FAKE:", percent(speaker.get("max_fake_score")))
         print("Status:", speaker["risk_level"])
+        if speaker.get("segments"):
+            print("Time ranges:")
+            for segment in speaker["segments"]:
+                print(f"  {float(segment['start']):.2f} - {float(segment['end']):.2f} sec")
         if speaker["risk_level"] == "INSUFFICIENT_AUDIO":
             print("Reason:", speaker["reason"])
 
